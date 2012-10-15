@@ -1,0 +1,5 @@
+<div>
+    Installs a dummy security realm with no actual security.
+    Useless in a production server;
+    only useful for evaluating the Jenkins UI elements related to user management and authorization.
+</div>
