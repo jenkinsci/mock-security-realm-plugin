@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import org.acegisecurity.AuthenticationException;
@@ -20,7 +21,6 @@ import org.acegisecurity.userdetails.User;
 import org.acegisecurity.userdetails.UserDetails;
 import org.acegisecurity.userdetails.UsernameNotFoundException;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.springframework.dao.DataAccessException;
 
 // XXX extend SecurityRealm directly and replace login/logout links with a simple pulldown in page header
 
@@ -31,12 +31,59 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     
     private final String data;
 
-    @DataBoundConstructor public MockSecurityRealm(String data) {
+    private final Long delayMillis;
+
+    private final boolean randomDelay;
+
+    private transient ThreadLocal<Random> entropy;
+
+    private transient int sqrtDelayMillis;
+
+    @DataBoundConstructor public MockSecurityRealm(String data, Long delayMillis, boolean randomDelay) {
         this.data = data;
+        this.randomDelay = randomDelay;
+        this.delayMillis = delayMillis == null || delayMillis <= 0 ? null : delayMillis;
     }
 
     public String getData() {
         return data;
+    }
+
+    public Long getDelayMillis() {
+        return delayMillis;
+    }
+
+    public boolean isRandomDelay() {
+        return randomDelay;
+    }
+
+    private void doDelay() {
+        if (delayMillis == null) return;
+        if (randomDelay) {
+            synchronized (this) {
+                if (entropy == null) {
+                    entropy = new ThreadLocal<Random>(){
+                        @Override
+                        protected Random initialValue() {
+                            return new Random();
+                        }
+                    };
+                    sqrtDelayMillis = (int)Math.sqrt(delayMillis);
+                }
+                long delayMillis = this.delayMillis - sqrtDelayMillis + entropy.get().nextInt(sqrtDelayMillis*2);
+                try {
+                    Thread.sleep(delayMillis);
+                } catch (InterruptedException e) {
+                    // ignore
+                }
+            }
+        } else {
+            try {
+                Thread.sleep(delayMillis);
+            } catch (InterruptedException e) {
+                // ignore
+            }
+        }
     }
 
     private Map<String,Set<String>> usersAndGroups() {
@@ -53,6 +100,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     }
 
     @Override protected UserDetails authenticate(String username, String password) throws AuthenticationException {
+        doDelay();
         UserDetails u = loadUserByUsername(username);
         if (!password.equals(username)) {
             throw new BadCredentialsException(password);
@@ -61,6 +109,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     }
 
     @Override public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        doDelay();
         final Set<String> groups = usersAndGroups().get(username);
         if (groups == null) {
             throw new UsernameNotFoundException(username);
@@ -74,6 +123,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     }
 
     @Override public GroupDetails loadGroupByGroupname(final String groupname) throws UsernameNotFoundException {
+        doDelay();
         for (Set<String> gs : usersAndGroups().values()) {
             if (gs.contains(groupname)) {
                 return new GroupDetails() {
