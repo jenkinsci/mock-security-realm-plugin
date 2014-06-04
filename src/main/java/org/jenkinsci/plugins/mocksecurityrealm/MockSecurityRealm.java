@@ -131,6 +131,15 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
                     public String getName() {
                         return groupname;
                     }
+                    @Override public Set<String> getMembers() {
+                        Set<String> r = new TreeSet<String>();
+                        for (Map.Entry<String,Set<String>> entry : usersAndGroups().entrySet()) {
+                            if (entry.getValue().contains(groupname)) {
+                                r.add(entry.getKey());
+                            }
+                        }
+                        return r;
+                    }
                 };
             }
         }
