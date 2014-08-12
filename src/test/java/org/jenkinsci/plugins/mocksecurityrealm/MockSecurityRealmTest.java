@@ -31,7 +31,8 @@ import static org.junit.Assert.*;
 
 public class MockSecurityRealmTest {
     
-    private final SecurityRealm r = new MockSecurityRealm("alice admin\nbob dev\ncharlie qa\ndebbie admin qa", null, false);
+    private final SecurityRealm r = new MockSecurityRealm("alice admin\nbob dev\ncharlie qa\ndebbie admin qa", null, false,
+            userIdStrategy, groupIdStrategy);
 
     @Test(expected=UsernameNotFoundException.class) public void nonexistentGroup() {
         r.loadGroupByGroupname("nonexistent");

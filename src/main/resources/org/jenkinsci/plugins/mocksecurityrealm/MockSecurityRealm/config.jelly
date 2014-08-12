@@ -9,5 +9,16 @@
     <f:entry title="${%Randomize delay}" field="randomDelay">
       <f:checkbox/>
     </f:entry>
+
+    <!-- TODO Jenkins 1.577+ switch to f:dropdownDescriptorSelector -->
+    <!--f:dropdownDescriptorSelector field="userIdStrategy" title="${%User name case sensitivity}" default="${descriptor.defaultIdStrategy}"/-->
+    <!--f:dropdownDescriptorSelector field="groupIdStrategy" title="${%Group name case sensitivity}" default="${descriptor.defaultIdStrategy}"/-->
+    <f:entry field="userIdStrategyClass" title="${%User name case sensitivity}">
+    <f:select default="${descriptor.defaultIdStrategy.class.name}"/>
+    </f:entry>
+    <f:entry field="groupIdStrategyClass" title="${%Group name case sensitivity}">
+    <f:select default="${descriptor.defaultIdStrategy.class.name}"/>
+    </f:entry>
+    <!-- END TODO Jenkins 1.577+ -->
   </f:advanced>
 </j:jelly>
