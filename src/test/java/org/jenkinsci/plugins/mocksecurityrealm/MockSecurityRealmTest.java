@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.mocksecurityrealm;
 
 import hudson.security.SecurityRealm;
+import jenkins.model.IdStrategy;
 import org.acegisecurity.userdetails.UsernameNotFoundException;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -32,7 +33,7 @@ import static org.junit.Assert.*;
 public class MockSecurityRealmTest {
     
     private final SecurityRealm r = new MockSecurityRealm("alice admin\nbob dev\ncharlie qa\ndebbie admin qa", null, false,
-            null, null);
+            IdStrategy.CASE_INSENSITIVE, IdStrategy.CASE_INSENSITIVE);
 
     @Test(expected=UsernameNotFoundException.class) public void nonexistentGroup() {
         r.loadGroupByGroupname("nonexistent");

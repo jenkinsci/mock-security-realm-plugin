@@ -49,16 +49,22 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
     private transient int sqrtDelayMillis;
 
-    @DataBoundConstructor public MockSecurityRealm(String data, Long delayMillis, boolean randomDelay,
-                                                   String userIdStrategyClass, String groupIdStrategyClass) {
+    // BEGIN TODO Jenkins 1.577+
+    @Deprecated
+    @DataBoundConstructor
+    public MockSecurityRealm(String data, Long delayMillis, boolean randomDelay,
+                             String userIdStrategyClass, String groupIdStrategyClass) {
+        this(data, delayMillis, randomDelay, DescriptorImpl.fromClassName(userIdStrategyClass),
+                DescriptorImpl.fromClassName(groupIdStrategyClass));
+    }
+    // END TODO Jenkins 1.577+
+
+    public MockSecurityRealm(String data, Long delayMillis, boolean randomDelay,
+                                                   IdStrategy userIdStrategy, IdStrategy groupIdStrategy) {
         this.data = data;
         this.randomDelay = randomDelay;
-        // BEGIN TODO Jenkins 1.577+
-        //this.userIdStrategy = userIdStrategy == null ? IdStrategy.CASE_INSENSITIVE : userIdStrategy;
-        //this.groupIdStrategy = groupIdStrategy == null ? IdStrategy.CASE_INSENSITIVE : groupIdStrategy;
-        this.userIdStrategy = DescriptorImpl.fromClassName(userIdStrategyClass);
-        this.groupIdStrategy = DescriptorImpl.fromClassName(groupIdStrategyClass);
-        // END TODO Jenkins 1.577+
+        this.userIdStrategy = userIdStrategy == null ? IdStrategy.CASE_INSENSITIVE : userIdStrategy;
+        this.groupIdStrategy = groupIdStrategy == null ? IdStrategy.CASE_INSENSITIVE : groupIdStrategy;
         this.delayMillis = delayMillis == null || delayMillis <= 0 ? null : delayMillis;
     }
 
@@ -197,7 +203,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
         // BEGIN TODO Jenkins 1.577+
         @Deprecated
         public static IdStrategy fromClassName(String className) {
-            for (Descriptor<IdStrategy> d: Jenkins.getInstance().getDescriptorList(IdStrategy.class)) {
+            for (Descriptor<IdStrategy> d : Jenkins.getInstance().getDescriptorList(IdStrategy.class)) {
                 if (d.clazz.getName().equals(className)) {
                     try {
                         return d.clazz.newInstance();
