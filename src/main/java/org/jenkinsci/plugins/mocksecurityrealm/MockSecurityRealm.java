@@ -7,18 +7,13 @@ import hudson.security.GroupDetails;
 import hudson.security.SecurityRealm;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import hudson.util.ListBoxModel;
 import jenkins.model.IdStrategy;
-import jenkins.model.IdStrategyDescriptor;
-import jenkins.model.Jenkins;
 import org.acegisecurity.AuthenticationException;
 import org.acegisecurity.BadCredentialsException;
 import org.acegisecurity.GrantedAuthority;
@@ -49,16 +44,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
     private transient int sqrtDelayMillis;
 
-    // BEGIN TODO Jenkins 1.577+
-    @Deprecated
     @DataBoundConstructor
-    public MockSecurityRealm(String data, Long delayMillis, boolean randomDelay,
-                             String userIdStrategyClass, String groupIdStrategyClass) {
-        this(data, delayMillis, randomDelay, DescriptorImpl.fromClassName(userIdStrategyClass),
-                DescriptorImpl.fromClassName(groupIdStrategyClass));
-    }
-    // END TODO Jenkins 1.577+
-
     public MockSecurityRealm(String data, Long delayMillis, boolean randomDelay,
                                                    IdStrategy userIdStrategy, IdStrategy groupIdStrategy) {
         this.data = data;
@@ -80,25 +66,13 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
         return randomDelay;
     }
 
-    public IdStrategy getUserIdStrategy() {
+    @Override public IdStrategy getUserIdStrategy() {
         return userIdStrategy == null ? IdStrategy.CASE_INSENSITIVE : userIdStrategy;
     }
 
-    public IdStrategy getGroupIdStrategy() {
+    @Override public IdStrategy getGroupIdStrategy() {
         return groupIdStrategy == null ? IdStrategy.CASE_INSENSITIVE : groupIdStrategy;
     }
-
-    // BEING TODO Jenkins 1.577+
-    @Deprecated
-    public String getUserIdStrategyClass() {
-        return getUserIdStrategy().getClass().getName();
-    }
-
-    @Deprecated
-    public String getGroupIdStrategyClass() {
-        return getGroupIdStrategy().getClass().getName();
-    }
-    // END TODO Jenkins 1.577+
 
     private void doDelay() {
         if (delayMillis == null) return;
@@ -200,44 +174,6 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
         public IdStrategy getDefaultIdStrategy() { return IdStrategy.CASE_INSENSITIVE; }
 
-        // BEGIN TODO Jenkins 1.577+
-        @Deprecated
-        public static IdStrategy fromClassName(String className) {
-            for (Descriptor<IdStrategy> d : Jenkins.getInstance().getDescriptorList(IdStrategy.class)) {
-                if (d.clazz.getName().equals(className)) {
-                    try {
-                        return d.clazz.newInstance();
-                    } catch (InstantiationException e) {
-                        // ignore
-                    } catch (IllegalAccessException e) {
-                        // ignore
-                    }
-                }
-            }
-            return IdStrategy.CASE_INSENSITIVE;
-        }
-
-        @Deprecated
-        public ListBoxModel doFillUserIdStrategyClassItems() {
-            ListBoxModel result = new ListBoxModel();
-            for (Descriptor<IdStrategy> d: Jenkins.getInstance().getDescriptorList(IdStrategy.class)) {
-                try {
-                    d.clazz.newInstance();
-                    result.add(d.getDisplayName(), d.clazz.getName());
-                } catch (InstantiationException e) {
-                    // ignore
-                } catch (IllegalAccessException e) {
-                    // ignore
-                }
-            }
-            return result;
-        }
-
-        @Deprecated
-        public ListBoxModel doFillGroupIdStrategyClassItems() {
-            return doFillUserIdStrategyClassItems();
-        }
-        // END TODO Jenkins 1.577+
     }
 
 }
