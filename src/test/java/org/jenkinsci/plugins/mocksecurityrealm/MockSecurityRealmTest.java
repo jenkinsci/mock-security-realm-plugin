@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
 
 public class MockSecurityRealmTest {
     
-    private final SecurityRealm r = new MockSecurityRealm("alice admin\nbob dev\ncharlie qa\ndebbie admin qa", null, false,
+    private final SecurityRealm r = new MockSecurityRealm("alice/wonder admin\nbob dev\ncharlie qa\ndebbie admin qa", null, false,
             IdStrategy.CASE_INSENSITIVE, IdStrategy.CASE_INSENSITIVE);
 
     @Test(expected=UsernameNotFoundException.class) public void nonexistentGroup() {
@@ -43,6 +43,14 @@ public class MockSecurityRealmTest {
         assertEquals("[alice, debbie]", r.loadGroupByGroupname("admin", true).getMembers().toString());
         assertEquals("[bob]", r.loadGroupByGroupname("dev", true).getMembers().toString());
         assertEquals("[charlie, debbie]", r.loadGroupByGroupname("qa", true).getMembers().toString());
+    }
+
+    @Test public void verifyUserWithPassword() {
+        assertEquals("wonder", r.loadUserByUsername("alice").getPassword());
+    }
+
+    @Test public void verifyUserWithoutPassword() {
+        assertEquals("bob", r.loadUserByUsername("bob").getPassword());
     }
 
 }
