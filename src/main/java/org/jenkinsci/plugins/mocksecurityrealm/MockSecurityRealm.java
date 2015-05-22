@@ -124,23 +124,19 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     }
 
     /**
-     * Return the users password if set. Otherwise return an empty string.
+     * Return the users password if set. Otherwise return username.
      * @param username
      * @return
      */
     private String getUserPassword(String username) {
-        String password = "";
+        String password = username;
         for (String line : data.split("\r?\n")) {
             String s = line.trim();
             if (s.isEmpty()) {
                 continue;
             }
-            String[] names = s.split(" +");
 
-            /**
-             * Check if password is set. If not, set username as password to have compatibility with older mock impleme-
-             * ntations
-             */
+            String[] names = s.split(" +");
             String[] usernamePassword = names[0].split("/");
 
             if (!usernamePassword[0].equals(username)) {
@@ -149,9 +145,6 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
             if (usernamePassword.length > 1) {
                 password = usernamePassword[1];
-            }
-            else {
-                password = usernamePassword[0];
             }
         }
         return password;

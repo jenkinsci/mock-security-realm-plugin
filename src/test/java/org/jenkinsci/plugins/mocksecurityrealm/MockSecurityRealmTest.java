@@ -45,11 +45,11 @@ public class MockSecurityRealmTest {
         assertEquals("[charlie, debbie]", r.loadGroupByGroupname("qa", true).getMembers().toString());
     }
 
-    @Test public void authenticateUserWithPassword() {
+    @Test public void verifyUserWithPassword() {
         assertEquals("wonder", r.loadUserByUsername("alice").getPassword());
     }
 
-    @Test public void authenticateUserWithoutPassword() {
+    @Test public void verifyUserWithoutPassword() {
         assertEquals("bob", r.loadUserByUsername("bob").getPassword());
     }
 
