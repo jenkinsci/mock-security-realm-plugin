@@ -114,15 +114,53 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
             final TreeSet<String> groups = new TreeSet<String>(getGroupIdStrategy());
             groups.addAll(Arrays.asList(names).subList(1, names.length));
-            r.put(names[0], groups);
+
+            /**
+             * Truncate the password if set
+             */
+            r.put(names[0].split("/")[0], groups);
         }
         return r;
+    }
+
+    /**
+     * Return the users password if set. Otherwise return an empty string.
+     * @param username
+     * @return
+     */
+    private String getUserPassword(String username) {
+        String password = "";
+        for (String line : data.split("\r?\n")) {
+            String s = line.trim();
+            if (s.isEmpty()) {
+                continue;
+            }
+            String[] names = s.split(" +");
+
+            /**
+             * Check if password is set. If not, set username as password to have compatibility with older mock impleme-
+             * ntations
+             */
+            String[] usernamePassword = names[0].split("/");
+
+            if (!usernamePassword[0].equals(username)) {
+                continue;
+            }
+
+            if (usernamePassword.length > 1) {
+                password = usernamePassword[1];
+            }
+            else {
+                password = usernamePassword[0];
+            }
+        }
+        return password;
     }
 
     @Override protected UserDetails authenticate(String username, String password) throws AuthenticationException {
         doDelay();
         UserDetails u = loadUserByUsername(username);
-        if (!password.equals(username)) {
+        if (!password.equals(u.getPassword())) {
             throw new BadCredentialsException(password);
         }
         return u;
@@ -139,7 +177,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
         for (String g : groups) {
             gs.add(new GrantedAuthorityImpl(g));
         }
-        return new User(username, "", true, true, true, true, gs.toArray(new GrantedAuthority[gs.size()]));
+        return new User(username, getUserPassword(username), true, true, true, true, gs.toArray(new GrantedAuthority[gs.size()]));
     }
 
     @Override public GroupDetails loadGroupByGroupname(final String groupname) throws UsernameNotFoundException {
