@@ -122,7 +122,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     @Override protected UserDetails authenticate(String username, String password) throws AuthenticationException {
         doDelay();
         UserDetails u = loadUserByUsername(username);
-        if (!password.equals(username)) {
+        if (!password.equals(u.getUsername())) {
             throw new BadCredentialsException(password);
         }
         return u;
@@ -130,37 +130,48 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
     @Override public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         doDelay();
-        final Set<String> groups = usersAndGroups().get(username);
-        if (groups == null) {
-            throw new UsernameNotFoundException(username);
+        final IdStrategy idStrategy = getUserIdStrategy();
+        for (Map.Entry<String, Set<String>> entry : usersAndGroups().entrySet()) {
+            if (idStrategy.equals(entry.getKey(), username)) {
+                List<GrantedAuthority> gs = new ArrayList<GrantedAuthority>();
+                gs.add(AUTHENTICATED_AUTHORITY);
+                for (String g : entry.getValue()) {
+                    gs.add(new GrantedAuthorityImpl(g));
+                }
+                return new User(entry.getKey(), "", true, true, true, true, gs.toArray(new GrantedAuthority[gs.size()]));
+            }
         }
-        List<GrantedAuthority> gs = new ArrayList<GrantedAuthority>();
-        gs.add(AUTHENTICATED_AUTHORITY);
-        for (String g : groups) {
-            gs.add(new GrantedAuthorityImpl(g));
-        }
-        return new User(username, "", true, true, true, true, gs.toArray(new GrantedAuthority[gs.size()]));
+        throw new UsernameNotFoundException(username);
     }
 
     @Override public GroupDetails loadGroupByGroupname(final String groupname) throws UsernameNotFoundException {
         doDelay();
-        for (Set<String> gs : usersAndGroups().values()) {
-            if (gs.contains(groupname)) {
-                return new GroupDetails() {
-                    @Override
-                    public String getName() {
-                        return groupname;
-                    }
-                    @Override public Set<String> getMembers() {
-                        Set<String> r = new TreeSet<String>();
-                        for (Map.Entry<String,Set<String>> entry : usersAndGroups().entrySet()) {
-                            if (entry.getValue().contains(groupname)) {
-                                r.add(entry.getKey());
-                            }
+        final IdStrategy idStrategy = getGroupIdStrategy();
+        for (Set<String> groups : usersAndGroups().values()) {
+            for (final String group: groups) {
+                if (idStrategy.equals(group, groupname)) {
+                    return new GroupDetails() {
+                        @Override
+                        public String getName() {
+                            return group;
                         }
-                        return r;
-                    }
-                };
+
+                        @Override
+                        public Set<String> getMembers() {
+                            final IdStrategy idStrategy = getGroupIdStrategy();
+                            Set<String> r = new TreeSet<String>();
+                            users: for (Map.Entry<String, Set<String>> entry : usersAndGroups().entrySet()) {
+                                for (String groupname: entry.getValue()) {
+                                    if (idStrategy.equals(group, groupname)) {
+                                        r.add(entry.getKey());
+                                        continue users;
+                                    }
+                                }
+                            }
+                            return r;
+                        }
+                    };
+                }
             }
         }
         throw new UsernameNotFoundException(groupname);

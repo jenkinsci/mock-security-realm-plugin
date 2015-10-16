@@ -28,6 +28,8 @@ import hudson.security.SecurityRealm;
 import jenkins.model.IdStrategy;
 import org.acegisecurity.userdetails.UsernameNotFoundException;
 import org.junit.Test;
+
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
 public class MockSecurityRealmTest {
@@ -43,6 +45,16 @@ public class MockSecurityRealmTest {
         assertEquals("[alice, debbie]", r.loadGroupByGroupname("admin", true).getMembers().toString());
         assertEquals("[bob]", r.loadGroupByGroupname("dev", true).getMembers().toString());
         assertEquals("[charlie, debbie]", r.loadGroupByGroupname("qa", true).getMembers().toString());
+    }
+
+    @Test public void getMembersWithIdStrategy() {
+        assertEquals("[alice, debbie]", r.loadGroupByGroupname("ADMIN", true).getMembers().toString());
+        assertEquals("[bob]", r.loadGroupByGroupname("dEv", true).getMembers().toString());
+        assertEquals("[charlie, debbie]", r.loadGroupByGroupname("qA", true).getMembers().toString());
+    }
+
+    @Test public void getUserWithIdStrategy() {
+        assertThat(r.loadUserByUsername("alice").getUsername(), is(r.loadUserByUsername("Alice").getUsername()));
     }
 
 }
