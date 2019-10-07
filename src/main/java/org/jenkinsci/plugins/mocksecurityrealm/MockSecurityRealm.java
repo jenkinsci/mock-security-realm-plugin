@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.mocksecurityrealm;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.security.AbstractPasswordBasedSecurityRealm;
@@ -29,7 +30,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * Mock security realm with no actual security.
  */
 public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
-    
+
     private final String data;
 
     private final Long delayMillis;
@@ -74,6 +75,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
         return groupIdStrategy == null ? IdStrategy.CASE_INSENSITIVE : groupIdStrategy;
     }
 
+    @SuppressFBWarnings(value = "SWL_SLEEP_WITH_LOCK_HELD", justification = "On purpose to introduce a delay")
     private void doDelay() {
         if (delayMillis == null) return;
         if (randomDelay) {

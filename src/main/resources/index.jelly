@@ -1,3 +1,4 @@
+<?jelly escape-by-default='true'?>
 <div>
     Installs a dummy security realm with no actual security.
     Useless in a production server;
