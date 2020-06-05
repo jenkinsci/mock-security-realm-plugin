@@ -1,0 +1,8 @@
+jenkins:
+  securityRealm:
+    mockSecurityRealm:
+      data: "alice admin\nbob dev\ncharlie qa\ndebbie admin qa"
+      delayMillis: 5
+      randomDelay: false
+      userIdStrategy: CaseInsensitive
+      groupIdStrategy: CaseInsensitive
