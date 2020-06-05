@@ -42,19 +42,19 @@ public class MockSecurityRealmTest {
     }
     
     @Test public void getMembers() {
-        assertEquals("[alice, debbie]", r.loadGroupByGroupname("admin", true).getMembers().toString());
-        assertEquals("[bob]", r.loadGroupByGroupname("dev", true).getMembers().toString());
-        assertEquals("[charlie, debbie]", r.loadGroupByGroupname("qa", true).getMembers().toString());
+        assertEquals("The users found in the 'admin' group are not the ones expected", "[alice, debbie]", r.loadGroupByGroupname("admin", true).getMembers().toString());
+        assertEquals("The users found in the 'dev' group are not the ones expected", "[bob]", r.loadGroupByGroupname("dev", true).getMembers().toString());
+        assertEquals("The users found in the 'qa' group are not the ones expected","[charlie, debbie]", r.loadGroupByGroupname("qa", true).getMembers().toString());
     }
 
     @Test public void getMembersWithIdStrategy() {
-        assertEquals("[alice, debbie]", r.loadGroupByGroupname("ADMIN", true).getMembers().toString());
-        assertEquals("[bob]", r.loadGroupByGroupname("dEv", true).getMembers().toString());
-        assertEquals("[charlie, debbie]", r.loadGroupByGroupname("qA", true).getMembers().toString());
+        assertEquals("Searching for 'ADMIN' users should have returned the 'admin' users as id strategy is CASE_INSENSITIVE","[alice, debbie]", r.loadGroupByGroupname("ADMIN", true).getMembers().toString());
+        assertEquals("Searching for 'dEv' users should have returned the 'dev' users as id strategy is CASE_INSENSITIVE","[bob]", r.loadGroupByGroupname("dEv", true).getMembers().toString());
+        assertEquals("Searching for 'qA' users should have return the 'admin' users as id strategy is CASE_INSENSITIVE","[charlie, debbie]", r.loadGroupByGroupname("qA", true).getMembers().toString());
     }
 
     @Test public void getUserWithIdStrategy() {
-        assertThat(r.loadUserByUsername("alice").getUsername(), is(r.loadUserByUsername("Alice").getUsername()));
+        assertThat("Searching for 'Alice' should have returned the proper user as user id strategy is CASE_INSENSITIVE", r.loadUserByUsername("alice").getUsername(), is(r.loadUserByUsername("Alice").getUsername()));
     }
 
 }
