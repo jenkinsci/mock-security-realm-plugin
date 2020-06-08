@@ -1,0 +1,2 @@
+_extends: .github
+tag-template: mock-security-realm-$NEXT_MINOR_VERSION
