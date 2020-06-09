@@ -2,7 +2,5 @@ jenkins:
   securityRealm:
     mockSecurityRealm:
       data: "alice admin\nbob dev\ndebbie admin qa\nRichard ADMIN"
-      delayMillis: 5
-      randomDelay: false
       userIdStrategy: CaseSensitive
       groupIdStrategy: CaseSensitive
