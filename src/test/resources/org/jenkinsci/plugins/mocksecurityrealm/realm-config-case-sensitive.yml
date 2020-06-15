@@ -1,0 +1,6 @@
+jenkins:
+  securityRealm:
+    mockSecurityRealm:
+      data: "alice admin\nbob dev\ndebbie admin qa\nRichard ADMIN"
+      userIdStrategy: CaseSensitive
+      groupIdStrategy: CaseSensitive
