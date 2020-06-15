@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>mock-security-realm</artifactId>
-  <version>1.5-SNAPSHOT</version>
+  <version>1.5</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -42,7 +42,7 @@
     <connection>scm:git:ssh://github.com/jenkinsci/mock-security-realm-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/mock-security-realm-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/mock-security-realm-plugin</url>
-    <tag>HEAD</tag>
+    <tag>mock-security-realm-1.5</tag>
   </scm>
 
   <repositories>
