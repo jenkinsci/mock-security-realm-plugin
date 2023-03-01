@@ -15,16 +15,14 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import jenkins.model.IdStrategy;
-import org.acegisecurity.AuthenticationException;
-import org.acegisecurity.BadCredentialsException;
-import org.acegisecurity.GrantedAuthority;
-import org.acegisecurity.GrantedAuthorityImpl;
-import org.acegisecurity.userdetails.User;
-import org.acegisecurity.userdetails.UserDetails;
-import org.acegisecurity.userdetails.UsernameNotFoundException;
 import org.kohsuke.stapler.DataBoundConstructor;
-
-// XXX extend SecurityRealm directly and replace login/logout links with a simple pulldown in page header
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 /**
  * Mock security realm with no actual security.
@@ -89,9 +87,9 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
                     };
                     sqrtDelayMillis = (int)Math.sqrt(delayMillis);
                 }
-                long delayMillis = this.delayMillis - sqrtDelayMillis + entropy.get().nextInt(sqrtDelayMillis*2);
+                long effectiveDelayMillis = this.delayMillis - sqrtDelayMillis + entropy.get().nextInt(sqrtDelayMillis*2);
                 try {
-                    Thread.sleep(delayMillis);
+                    Thread.sleep(effectiveDelayMillis);
                 } catch (InterruptedException e) {
                     // ignore
                 }
@@ -106,7 +104,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     }
 
     private Map<String,Set<String>> usersAndGroups() {
-        Map<String,Set<String>> r = new TreeMap<String, Set<String>>(getUserIdStrategy());
+        Map<String,Set<String>> r = new TreeMap<>(getUserIdStrategy());
         for (String line : data.split("\r?\n")) {
             String s = line.trim();
             if (s.isEmpty()) {
@@ -114,39 +112,39 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
             }
             String[] names = s.split(" +");
 
-            final TreeSet<String> groups = new TreeSet<String>(getGroupIdStrategy());
+            final TreeSet<String> groups = new TreeSet<>(getGroupIdStrategy());
             groups.addAll(Arrays.asList(names).subList(1, names.length));
             r.put(names[0], groups);
         }
         return r;
     }
 
-    @Override protected UserDetails authenticate(String username, String password) throws AuthenticationException {
+    @Override protected UserDetails authenticate2(String username, String password) throws AuthenticationException {
         doDelay();
-        UserDetails u = loadUserByUsername(username);
+        UserDetails u = loadUserByUsername2(username);
         if (!password.equals(u.getUsername())) {
             throw new BadCredentialsException(password);
         }
         return u;
     }
 
-    @Override public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    @Override public UserDetails loadUserByUsername2(String username) throws UsernameNotFoundException {
         doDelay();
         final IdStrategy idStrategy = getUserIdStrategy();
         for (Map.Entry<String, Set<String>> entry : usersAndGroups().entrySet()) {
             if (idStrategy.equals(entry.getKey(), username)) {
-                List<GrantedAuthority> gs = new ArrayList<GrantedAuthority>();
-                gs.add(AUTHENTICATED_AUTHORITY);
+                List<GrantedAuthority> gs = new ArrayList<>();
+                gs.add(AUTHENTICATED_AUTHORITY2);
                 for (String g : entry.getValue()) {
-                    gs.add(new GrantedAuthorityImpl(g));
+                    gs.add(new SimpleGrantedAuthority(g));
                 }
-                return new User(entry.getKey(), "", true, true, true, true, gs.toArray(new GrantedAuthority[gs.size()]));
+                return new User(entry.getKey(), "", true, true, true, true, gs);
             }
         }
         throw new UsernameNotFoundException(username);
     }
 
-    @Override public GroupDetails loadGroupByGroupname(final String groupname) throws UsernameNotFoundException {
+    @Override public GroupDetails loadGroupByGroupname2(final String groupname, boolean fetchMembers) throws UsernameNotFoundException {
         doDelay();
         final IdStrategy idStrategy = getGroupIdStrategy();
         for (Set<String> groups : usersAndGroups().values()) {
@@ -161,7 +159,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
                         @Override
                         public Set<String> getMembers() {
                             final IdStrategy idStrategy = getGroupIdStrategy();
-                            Set<String> r = new TreeSet<String>();
+                            Set<String> r = new TreeSet<>();
                             users: for (Map.Entry<String, Set<String>> entry : usersAndGroups().entrySet()) {
                                 for (String groupname: entry.getValue()) {
                                     if (idStrategy.equals(group, groupname)) {
