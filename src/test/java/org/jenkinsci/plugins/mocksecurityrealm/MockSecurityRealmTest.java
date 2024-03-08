@@ -61,7 +61,7 @@ public class MockSecurityRealmTest {
     }
 
     @Test public void outage() {
-        r.setOutage(true);
+        r.outage();
         assertThrows(UserMayOrMayNotExistException2.class, () -> r.loadUserByUsername2("alice"));
         assertThrows(UserMayOrMayNotExistException2.class, () -> r.loadGroupByGroupname2("admin", false));
         assertThrows(UserMayOrMayNotExistException2.class, () -> r.authenticate2("alice", "alice"));

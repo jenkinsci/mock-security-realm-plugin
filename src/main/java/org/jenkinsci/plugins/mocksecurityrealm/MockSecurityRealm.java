@@ -36,7 +36,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
     private final boolean randomDelay;
 
-    private boolean outage;
+    private transient boolean outage;
 
     private final IdStrategy userIdStrategy;
 
@@ -57,11 +57,17 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     }
 
     /**
-     * Simulates an outage.
-     * @param outage If true, all subsequent calls will fail.
+     * Starts a simulated outage.
      */
-    public void setOutage(boolean outage) {
-        this.outage = outage;
+    public void outage(){
+        this.outage = true;
+    }
+
+    /**
+     * Ends the simulated outage.
+     */
+    public void endOutage() {
+        this.outage = false;
     }
 
     public String getData() {
