@@ -24,17 +24,20 @@
 
 package org.jenkinsci.plugins.mocksecurityrealm;
 
-import hudson.security.SecurityRealm;
-import jenkins.model.IdStrategy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+
+import hudson.security.UserMayOrMayNotExistException2;
+import jenkins.model.IdStrategy;
+import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class MockSecurityRealmTest {
     
-    private final SecurityRealm r = new MockSecurityRealm("alice admin\nbob dev\ncharlie qa\ndebbie admin qa", null, false,
+    private final MockSecurityRealm r = new MockSecurityRealm("alice admin\nbob dev\ncharlie qa\ndebbie admin qa", null, false,
             IdStrategy.CASE_INSENSITIVE, IdStrategy.CASE_INSENSITIVE);
 
     @Test(expected = UsernameNotFoundException.class) public void nonexistentGroup() {
@@ -55,6 +58,13 @@ public class MockSecurityRealmTest {
 
     @Test public void getUserWithIdStrategy() {
         assertThat("Searching for 'Alice' should have returned the proper user as user id strategy is CASE_INSENSITIVE", r.loadUserByUsername2("alice").getUsername(), is(r.loadUserByUsername2("Alice").getUsername()));
+    }
+
+    @Test public void outage() {
+        r.setOutage(true);
+        assertThrows(UserMayOrMayNotExistException2.class, () -> r.loadUserByUsername2("alice"));
+        assertThrows(UserMayOrMayNotExistException2.class, () -> r.loadGroupByGroupname2("admin", false));
+        assertThrows(UserMayOrMayNotExistException2.class, () -> r.authenticate2("alice", "alice"));
     }
 
 }

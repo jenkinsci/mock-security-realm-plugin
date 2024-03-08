@@ -6,6 +6,7 @@ import hudson.model.Descriptor;
 import hudson.security.AbstractPasswordBasedSecurityRealm;
 import hudson.security.GroupDetails;
 import hudson.security.SecurityRealm;
+import hudson.security.UserMayOrMayNotExistException2;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,6 +36,8 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
     private final boolean randomDelay;
 
+    private boolean outage;
+
     private final IdStrategy userIdStrategy;
 
     private final IdStrategy groupIdStrategy;
@@ -51,6 +54,14 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
         this.userIdStrategy = userIdStrategy == null ? IdStrategy.CASE_INSENSITIVE : userIdStrategy;
         this.groupIdStrategy = groupIdStrategy == null ? IdStrategy.CASE_INSENSITIVE : groupIdStrategy;
         this.delayMillis = delayMillis == null || delayMillis <= 0 ? null : delayMillis;
+    }
+
+    /**
+     * Simulates an outage.
+     * @param outage If true, all subsequent calls will fail.
+     */
+    public void setOutage(boolean outage) {
+        this.outage = outage;
     }
 
     public String getData() {
@@ -120,7 +131,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     }
 
     @Override protected UserDetails authenticate2(String username, String password) throws AuthenticationException {
-        doDelay();
+        troubles();
         UserDetails u = loadUserByUsername2(username);
         if (!password.equals(u.getUsername())) {
             throw new BadCredentialsException(password);
@@ -128,8 +139,19 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
         return u;
     }
 
-    @Override public UserDetails loadUserByUsername2(String username) throws UsernameNotFoundException {
+    private void troubles() {
+        mayOutage();
         doDelay();
+    }
+
+    private void mayOutage() {
+        if (outage) {
+            throw new UserMayOrMayNotExistException2("Outage");
+        }
+    }
+
+    @Override public UserDetails loadUserByUsername2(String username) throws UsernameNotFoundException {
+        troubles();
         final IdStrategy idStrategy = getUserIdStrategy();
         for (Map.Entry<String, Set<String>> entry : usersAndGroups().entrySet()) {
             if (idStrategy.equals(entry.getKey(), username)) {
@@ -145,7 +167,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
     }
 
     @Override public GroupDetails loadGroupByGroupname2(final String groupname, boolean fetchMembers) throws UsernameNotFoundException {
-        doDelay();
+        troubles();
         final IdStrategy idStrategy = getGroupIdStrategy();
         for (Set<String> groups : usersAndGroups().values()) {
             for (final String group: groups) {
