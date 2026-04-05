@@ -36,8 +36,12 @@ import org.junit.Test;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class MockSecurityRealmTest {
-    
+
     private final MockSecurityRealm r = new MockSecurityRealm("alice admin\nbob dev\ncharlie qa\ndebbie admin qa", null, false,
+            IdStrategy.CASE_INSENSITIVE, IdStrategy.CASE_INSENSITIVE);
+
+    private final MockSecurityRealm withDisplayNames = new MockSecurityRealm(
+            "alice[Alice Smith] admin[Administrators]\nbob dev[Development]\ncharlie qa\ndebbie admin qa", null, false,
             IdStrategy.CASE_INSENSITIVE, IdStrategy.CASE_INSENSITIVE);
 
     @Test(expected = UsernameNotFoundException.class) public void nonexistentGroup() {
@@ -58,6 +62,30 @@ public class MockSecurityRealmTest {
 
     @Test public void getUserWithIdStrategy() {
         assertThat("Searching for 'Alice' should have returned the proper user as user id strategy is CASE_INSENSITIVE", r.loadUserByUsername2("alice").getUsername(), is(r.loadUserByUsername2("Alice").getUsername()));
+    }
+
+    @Test public void groupDisplayName() {
+        assertThat(withDisplayNames.loadGroupByGroupname2("admin", false).getDisplayName(), is("Administrators"));
+        assertThat(withDisplayNames.loadGroupByGroupname2("dev", false).getDisplayName(), is("Development"));
+    }
+
+    @Test public void groupDisplayNameFallsBackToName() {
+        assertThat(withDisplayNames.loadGroupByGroupname2("qa", false).getDisplayName(), is("qa"));
+    }
+
+    @Test public void displayNamesBackwardsCompatible() {
+        assertEquals("[alice, debbie]", r.loadGroupByGroupname2("admin", true).getMembers().toString());
+        assertThat(r.loadGroupByGroupname2("admin", false).getDisplayName(), is("admin"));
+    }
+
+    @Test public void displayNamesParseMembersCorrectly() {
+        assertEquals("[alice, debbie]", withDisplayNames.loadGroupByGroupname2("admin", true).getMembers().toString());
+        assertEquals("[bob]", withDisplayNames.loadGroupByGroupname2("dev", true).getMembers().toString());
+    }
+
+    @Test public void userLoadedWithDisplayNames() {
+        assertThat(withDisplayNames.loadUserByUsername2("alice").getUsername(), is("alice"));
+        assertThat(withDisplayNames.loadUserByUsername2("bob").getUsername(), is("bob"));
     }
 
     @Test public void outage() {
