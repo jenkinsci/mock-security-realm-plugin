@@ -33,7 +33,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
  */
 public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
-    private static final Pattern TOKEN_PATTERN = Pattern.compile("(\\w[\\w.-]*)(?:\\[([^]]*)])?");
+    private static final Pattern TOKEN_PATTERN = Pattern.compile("([^\\s\\[]+)(?:\\[([^]]*)])?");
 
     private final String data;
 
@@ -197,8 +197,11 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
                 String displayName = parsed.userDisplayNames.get(entry.getKey());
                 if (displayName != null && Jenkins.getInstanceOrNull() != null) {
                     hudson.model.User u = hudson.model.User.getById(entry.getKey(), true);
-                    if (u != null && !displayName.equals(u.getFullName())) {
-                        u.setFullName(displayName);
+                    if (u != null) {
+                        String currentFullName = u.getFullName();
+                        if (currentFullName == null || currentFullName.trim().isEmpty() || currentFullName.equals(u.getId())) {
+                            u.setFullName(displayName);
+                        }
                     }
                 }
                 return new User(entry.getKey(), "", true, true, true, true, gs);
