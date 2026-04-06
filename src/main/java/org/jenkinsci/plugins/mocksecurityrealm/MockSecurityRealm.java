@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.mocksecurityrealm;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.Descriptor;
@@ -124,16 +125,8 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
         }
     }
 
-    private static class ParsedData {
-        final Map<String, Set<String>> usersToGroups;
-        final Map<String, String> userDisplayNames;
-        final Map<String, String> groupDisplayNames;
-
-        ParsedData(Map<String, Set<String>> usersToGroups, Map<String, String> userDisplayNames, Map<String, String> groupDisplayNames) {
-            this.usersToGroups = usersToGroups;
-            this.userDisplayNames = userDisplayNames;
-            this.groupDisplayNames = groupDisplayNames;
-        }
+    private record ParsedData(Map<String, Set<String>> usersToGroups, Map<String, String> userDisplayNames,
+                              Map<String, String> groupDisplayNames) {
     }
 
     private ParsedData parseData() {
@@ -168,10 +161,6 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
             }
         }
         return new ParsedData(usersToGroups, userDisplayNames, groupDisplayNames);
-    }
-
-    private Map<String,Set<String>> usersAndGroups() {
-        return parseData().usersToGroups;
     }
 
     @Override protected UserDetails authenticate2(String username, String password) throws AuthenticationException {
@@ -260,6 +249,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
     @Extension public static final class DescriptorImpl extends Descriptor<SecurityRealm> {
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Mock Security Realm";
         }
