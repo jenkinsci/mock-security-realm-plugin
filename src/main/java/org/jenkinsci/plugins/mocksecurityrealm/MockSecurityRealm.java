@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.mocksecurityrealm;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.Descriptor;
@@ -8,14 +9,16 @@ import hudson.security.GroupDetails;
 import hudson.security.SecurityRealm;
 import hudson.security.UserMayOrMayNotExistException2;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import jenkins.model.IdStrategy;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -29,6 +32,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
  * Mock security realm with no actual security.
  */
 public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
+
+    private static final Pattern TOKEN_PATTERN = Pattern.compile("([^\\s\\[]+)(?:\\[([^]]*)])?");
 
     private final String data;
 
@@ -120,20 +125,42 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
         }
     }
 
-    private Map<String,Set<String>> usersAndGroups() {
-        Map<String,Set<String>> r = new TreeMap<>(getUserIdStrategy());
+    private record ParsedData(Map<String, Set<String>> usersToGroups, Map<String, String> userDisplayNames,
+                              Map<String, String> groupDisplayNames) {
+    }
+
+    private ParsedData parseData() {
+        Map<String, Set<String>> usersToGroups = new TreeMap<>(getUserIdStrategy());
+        Map<String, String> userDisplayNames = new TreeMap<>(getUserIdStrategy());
+        Map<String, String> groupDisplayNames = new TreeMap<>(getGroupIdStrategy());
         for (String line : data.split("\r?\n")) {
             String s = line.trim();
             if (s.isEmpty()) {
                 continue;
             }
-            String[] names = s.split(" +");
-
-            final TreeSet<String> groups = new TreeSet<>(getGroupIdStrategy());
-            groups.addAll(Arrays.asList(names).subList(1, names.length));
-            r.put(names[0], groups);
+            Matcher matcher = TOKEN_PATTERN.matcher(s);
+            String username = null;
+            TreeSet<String> groups = new TreeSet<>(getGroupIdStrategy());
+            while (matcher.find()) {
+                String id = matcher.group(1);
+                String displayName = matcher.group(2);
+                if (username == null) {
+                    username = id;
+                    if (displayName != null) {
+                        userDisplayNames.put(id, displayName);
+                    }
+                } else {
+                    groups.add(id);
+                    if (displayName != null) {
+                        groupDisplayNames.put(id, displayName);
+                    }
+                }
+            }
+            if (username != null) {
+                usersToGroups.put(username, groups);
+            }
         }
-        return r;
+        return new ParsedData(usersToGroups, userDisplayNames, groupDisplayNames);
     }
 
     @Override protected UserDetails authenticate2(String username, String password) throws AuthenticationException {
@@ -158,13 +185,24 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
     @Override public UserDetails loadUserByUsername2(String username) throws UsernameNotFoundException {
         troubles();
+        final ParsedData parsed = parseData();
         final IdStrategy idStrategy = getUserIdStrategy();
-        for (Map.Entry<String, Set<String>> entry : usersAndGroups().entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : parsed.usersToGroups.entrySet()) {
             if (idStrategy.equals(entry.getKey(), username)) {
                 List<GrantedAuthority> gs = new ArrayList<>();
                 gs.add(AUTHENTICATED_AUTHORITY2);
                 for (String g : entry.getValue()) {
                     gs.add(new SimpleGrantedAuthority(g));
+                }
+                String displayName = parsed.userDisplayNames.get(entry.getKey());
+                if (displayName != null && Jenkins.getInstanceOrNull() != null) {
+                    hudson.model.User u = hudson.model.User.getById(entry.getKey(), true);
+                    if (u != null) {
+                        String currentFullName = u.getFullName();
+                        if (currentFullName == null || currentFullName.trim().isEmpty() || currentFullName.equals(u.getId())) {
+                            u.setFullName(displayName);
+                        }
+                    }
                 }
                 return new User(entry.getKey(), "", true, true, true, true, gs);
             }
@@ -174,10 +212,12 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
     @Override public GroupDetails loadGroupByGroupname2(final String groupname, boolean fetchMembers) throws UsernameNotFoundException {
         troubles();
+        final ParsedData parsed = parseData();
         final IdStrategy idStrategy = getGroupIdStrategy();
-        for (Set<String> groups : usersAndGroups().values()) {
+        for (Set<String> groups : parsed.usersToGroups.values()) {
             for (final String group: groups) {
                 if (idStrategy.equals(group, groupname)) {
+                    final String groupDisplayName = parsed.groupDisplayNames.get(group);
                     return new GroupDetails() {
                         @Override
                         public String getName() {
@@ -185,10 +225,15 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
                         }
 
                         @Override
+                        public String getDisplayName() {
+                            return groupDisplayName != null ? groupDisplayName : group;
+                        }
+
+                        @Override
                         public Set<String> getMembers() {
                             final IdStrategy idStrategy = getGroupIdStrategy();
                             Set<String> r = new TreeSet<>();
-                            users: for (Map.Entry<String, Set<String>> entry : usersAndGroups().entrySet()) {
+                            users: for (Map.Entry<String, Set<String>> entry : parsed.usersToGroups.entrySet()) {
                                 for (String groupname: entry.getValue()) {
                                     if (idStrategy.equals(group, groupname)) {
                                         r.add(entry.getKey());
@@ -207,6 +252,7 @@ public class MockSecurityRealm extends AbstractPasswordBasedSecurityRealm {
 
     @Extension public static final class DescriptorImpl extends Descriptor<SecurityRealm> {
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Mock Security Realm";
         }
