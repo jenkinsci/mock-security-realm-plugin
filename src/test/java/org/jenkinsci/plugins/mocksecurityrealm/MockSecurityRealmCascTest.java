@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.mocksecurityrealm;
 
+import hudson.model.User;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.casc.misc.junit.jupiter.WithJenkinsConfiguredWithCode;
@@ -46,6 +47,26 @@ class MockSecurityRealmCascTest {
 
         assertThrows(UsernameNotFoundException.class, () ->
             securityRealm.loadUserByUsername2("richard").getUsername());
+    }
+
+    @ConfiguredWithCode("realm-config-display-names.yml")
+    @Test
+    void displayNamesAreConfigured() {
+        final MockSecurityRealm securityRealm = getMockSecurityRealm();
+
+        assertThat(securityRealm.loadGroupByGroupname2("admin", false).getDisplayName(), is("Administrators"));
+        assertThat(securityRealm.loadGroupByGroupname2("dev", false).getDisplayName(), is("Development"));
+        assertThat(securityRealm.loadGroupByGroupname2("qa", false).getDisplayName(), is("qa"));
+
+        securityRealm.loadUserByUsername2("alice");
+        User alice = User.getById("alice", false);
+        assertNotNull(alice);
+        assertThat(alice.getFullName(), is("Alice Smith"));
+
+        securityRealm.loadUserByUsername2("bob");
+        User bob = User.getById("bob", false);
+        assertNotNull(bob);
+        assertThat(bob.getFullName(), is("Robert Jones"));
     }
 
     private MockSecurityRealm getMockSecurityRealm() {
