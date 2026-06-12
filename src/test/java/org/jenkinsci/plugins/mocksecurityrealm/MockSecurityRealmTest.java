@@ -26,17 +26,16 @@ package org.jenkinsci.plugins.mocksecurityrealm;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import hudson.security.UserMayOrMayNotExistException2;
 import jenkins.model.IdStrategy;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-public class MockSecurityRealmTest {
-
+class MockSecurityRealmTest {
+    
     private final MockSecurityRealm r = new MockSecurityRealm("alice admin\nbob dev\ncharlie qa\ndebbie admin qa", null, false,
             IdStrategy.CASE_INSENSITIVE, IdStrategy.CASE_INSENSITIVE);
 
@@ -44,51 +43,62 @@ public class MockSecurityRealmTest {
             "alice[Alice Smith] admin[Administrators]\nbob dev[Development]\ncharlie qa\ndebbie admin qa", null, false,
             IdStrategy.CASE_INSENSITIVE, IdStrategy.CASE_INSENSITIVE);
 
-    @Test(expected = UsernameNotFoundException.class) public void nonexistentGroup() {
-        r.loadGroupByGroupname2("nonexistent", false);
-    }
-    
-    @Test public void getMembers() {
-        assertEquals("The users found in the 'admin' group are not the ones expected", "[alice, debbie]", r.loadGroupByGroupname2("admin", true).getMembers().toString());
-        assertEquals("The users found in the 'dev' group are not the ones expected", "[bob]", r.loadGroupByGroupname2("dev", true).getMembers().toString());
-        assertEquals("The users found in the 'qa' group are not the ones expected","[charlie, debbie]", r.loadGroupByGroupname2("qa", true).getMembers().toString());
+    @Test
+    void nonexistentGroup() {
+        assertThrows(UsernameNotFoundException.class, () ->
+            r.loadGroupByGroupname2("nonexistent", false));
     }
 
-    @Test public void getMembersWithIdStrategy() {
-        assertEquals("Searching for 'ADMIN' users should have returned the 'admin' users as id strategy is CASE_INSENSITIVE","[alice, debbie]", r.loadGroupByGroupname2("ADMIN", true).getMembers().toString());
-        assertEquals("Searching for 'dEv' users should have returned the 'dev' users as id strategy is CASE_INSENSITIVE","[bob]", r.loadGroupByGroupname2("dEv", true).getMembers().toString());
-        assertEquals("Searching for 'qA' users should have return the 'admin' users as id strategy is CASE_INSENSITIVE","[charlie, debbie]", r.loadGroupByGroupname2("qA", true).getMembers().toString());
+    @Test
+    void getMembers() {
+        assertEquals("[alice, debbie]", r.loadGroupByGroupname2("admin", true).getMembers().toString(), "The users found in the 'admin' group are not the ones expected");
+        assertEquals("[bob]", r.loadGroupByGroupname2("dev", true).getMembers().toString(), "The users found in the 'dev' group are not the ones expected");
+        assertEquals("[charlie, debbie]",r.loadGroupByGroupname2("qa", true).getMembers().toString(), "The users found in the 'qa' group are not the ones expected");
     }
 
-    @Test public void getUserWithIdStrategy() {
+    @Test
+    void getMembersWithIdStrategy() {
+        assertEquals("[alice, debbie]",r.loadGroupByGroupname2("ADMIN", true).getMembers().toString(), "Searching for 'ADMIN' users should have returned the 'admin' users as id strategy is CASE_INSENSITIVE");
+        assertEquals("[bob]",r.loadGroupByGroupname2("dEv", true).getMembers().toString(), "Searching for 'dEv' users should have returned the 'dev' users as id strategy is CASE_INSENSITIVE");
+        assertEquals("[charlie, debbie]",r.loadGroupByGroupname2("qA", true).getMembers().toString(), "Searching for 'qA' users should have return the 'admin' users as id strategy is CASE_INSENSITIVE");
+    }
+
+    @Test
+    void getUserWithIdStrategy() {
         assertThat("Searching for 'Alice' should have returned the proper user as user id strategy is CASE_INSENSITIVE", r.loadUserByUsername2("alice").getUsername(), is(r.loadUserByUsername2("Alice").getUsername()));
     }
 
-    @Test public void groupDisplayName() {
+    @Test
+    void groupDisplayName() {
         assertThat(withDisplayNames.loadGroupByGroupname2("admin", false).getDisplayName(), is("Administrators"));
         assertThat(withDisplayNames.loadGroupByGroupname2("dev", false).getDisplayName(), is("Development"));
     }
 
-    @Test public void groupDisplayNameFallsBackToName() {
+    @Test
+    void groupDisplayNameFallsBackToName() {
         assertThat(withDisplayNames.loadGroupByGroupname2("qa", false).getDisplayName(), is("qa"));
     }
 
-    @Test public void displayNamesBackwardsCompatible() {
+    @Test
+    void displayNamesBackwardsCompatible() {
         assertEquals("[alice, debbie]", r.loadGroupByGroupname2("admin", true).getMembers().toString());
         assertThat(r.loadGroupByGroupname2("admin", false).getDisplayName(), is("admin"));
     }
 
-    @Test public void displayNamesParseMembersCorrectly() {
+    @Test
+    void displayNamesParseMembersCorrectly() {
         assertEquals("[alice, debbie]", withDisplayNames.loadGroupByGroupname2("admin", true).getMembers().toString());
         assertEquals("[bob]", withDisplayNames.loadGroupByGroupname2("dev", true).getMembers().toString());
     }
 
-    @Test public void userLoadedWithDisplayNames() {
+    @Test
+    void userLoadedWithDisplayNames() {
         assertThat(withDisplayNames.loadUserByUsername2("alice").getUsername(), is("alice"));
         assertThat(withDisplayNames.loadUserByUsername2("bob").getUsername(), is("bob"));
     }
 
-    @Test public void outage() {
+    @Test
+    void outage() {
         r.outage();
         assertThrows(UserMayOrMayNotExistException2.class, () -> r.loadUserByUsername2("alice"));
         assertThrows(UserMayOrMayNotExistException2.class, () -> r.loadGroupByGroupname2("admin", false));
