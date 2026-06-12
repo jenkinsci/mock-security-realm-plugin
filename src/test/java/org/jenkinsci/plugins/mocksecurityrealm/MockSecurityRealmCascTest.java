@@ -52,7 +52,7 @@ class MockSecurityRealmCascTest {
 
     @ConfiguredWithCode("realm-config-display-names.yml")
     @Test
-    void displayNamesAreConfigured() {
+    void displayNamesAreConfigured(JenkinsConfiguredWithCodeRule r) {
         final MockSecurityRealm securityRealm = getMockSecurityRealm();
 
         assertThat(securityRealm.loadGroupByGroupname2("admin", false).getDisplayName(), is("Administrators"));
